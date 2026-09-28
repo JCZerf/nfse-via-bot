@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta NFS-e Via</title>
+<style>
+  :root {
+    --ground: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #1b211d;
+    --muted: #5c655f;
+    --line: #d6dbd4;
+    --accent: #0b6e4f;
+    --accent-ink: #ffffff;
+    --good: #1f8a4c;
+    --warn: #b7791f;
+    --bad: #b3261e;
+    --code: #eef1ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131715;
+      --surface: #1c221e;
+      --ink: #e4e9e5;
+      --muted: #97a29a;
+      --line: #313a34;
+      --accent: #3fbf8f;
+      --accent-ink: #0f1512;
+      --good: #4cc983;
+      --warn: #e0a946;
+      --bad: #f07167;
+      --code: #161b18;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131715;
+    --surface: #1c221e;
+    --ink: #e4e9e5;
+    --muted: #97a29a;
+    --line: #313a34;
+    --accent: #3fbf8f;
+    --accent-ink: #0f1512;
+    --good: #4cc983;
+    --warn: #e0a946;
+    --bad: #f07167;
+    --code: #161b18;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 16px 48px;
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  header h1 { margin: 0 0 4px; font-size: 26px; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 65ch; }
+  form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  label { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+  input {
+    font: 15px ui-monospace, "SFMono-Regular", Menlo, monospace;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--ground);
+    color: var(--ink);
+    min-width: 0;
+  }
+  input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #token { grid-column: 1 / -1; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: wait; }
+  @media (max-width: 560px) { form { grid-template-columns: 1fr; } }
+  .status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 24px; }
+  .pill { font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: var(--surface); }
+  .pill.found { background: var(--good); }
+  .pill.refused { background: var(--warn); }
+  .pill.error { background: var(--bad); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  section h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+  dt { color: var(--muted); font-size: 14px; }
+  dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .total { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  ol { margin: 0; padding-left: 20px; font-variant-numeric: tabular-nums; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+  pre { margin: 10px 0 0; padding: 12px; background: var(--code); border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  .hidden { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .spin { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Consulta NFS-e Via</h1>
+    <p>Informe a chave de acesso da nota de pedágio. O hCaptcha é resolvido pelo serviço, e a nota
+      volta estruturada. Leva de 30 a 90 segundos.</p>
+  </header>
+
+  <form id="form">
+    <label for="key">Chave de acesso</label>
+    <input id="key" name="key" autocomplete="off" spellcheck="false" placeholder="50 caracteres" required>
+    <button id="submit" type="submit">Consultar</button>
+    <input id="token" name="token" type="password" autocomplete="off" placeholder="Token de acesso, se exigido" class="hidden">
+  </form>
+
+  <div class="status" id="status" role="status"></div>
+
+  <div id="result" class="hidden">
+    <div class="grid">
+      <section>
+        <h2>Nota</h2>
+        <dl id="note"></dl>
+      </section>
+      <section>
+        <h2>Valor total</h2>
+        <div class="total" id="total"></div>
+        <dl id="amounts"></dl>
+      </section>
+      <section>
+        <h2>Concessionária</h2>
+        <dl id="issuer"></dl>
+      </section>
+      <section>
+        <h2>Passagem</h2>
+        <dl id="trip"></dl>
+      </section>
+      <section>
+        <h2>Tributos</h2>
+        <dl id="taxes"></dl>
+      </section>
+      <section>
+        <h2>Protocolo</h2>
+        <dl id="protocol"></dl>
+      </section>
+    </div>
+  </div>
+
+  <section id="attempts-box" class="hidden">
+    <h2>Tentativas</h2>
+    <ol id="attempts"></ol>
+  </section>
+
+  <details id="raw-box" class="hidden">
+    <summary>Resposta em JSON</summary>
+    <pre id="raw"></pre>
+  </details>
+</main>
+<script>
+  const money = (v) => (v == null ? "-" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
+  const text = (v) => (v == null || v === "" ? "-" : String(v));
+  const when = (v) => (v ? new Date(v).toLocaleString("pt-BR") : "-");
+
+  function fill(id, rows) {
+    const list = document.getElementById(id);
+    list.replaceChildren();
+    for (const [label, value] of rows) {
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      list.append(dt, dd);
+    }
+  }
+
+  function status(html, spinning) {
+    const box = document.getElementById("status");
+    box.replaceChildren();
+    if (spinning) {
+      const spin = document.createElement("span");
+      spin.className = "spin";
+      box.append(spin);
+    }
+    const span = document.createElement("span");
+    span.textContent = html;
+    box.append(span);
+  }
+
+  function pill(kind, label) {
+    const box = document.getElementById("status");
+    const tag = document.createElement("span");
+    tag.className = `pill ${kind}`;
+    tag.textContent = label;
+    box.prepend(tag);
+  }
+
+  const outcomes = { accepted: "aceito", token_refused: "token recusado pela Via", solver_error: "erro no solver", via_error: "erro da Via" };
+
+  function show(data) {
+    document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
+    document.getElementById("raw-box").classList.remove("hidden");
+    const attempts = document.getElementById("attempts");
+    attempts.replaceChildren();
+    for (const a of data.attempts || []) {
+      const li = document.createElement("li");
+      const score = a.score != null ? `, score ${a.score}` : "";
+      li.textContent = `${outcomes[a.outcome] || a.outcome} em ${a.seconds} s${score}${a.detail ? ` (${a.detail})` : ""}`;
+      attempts.append(li);
+    }
+    document.getElementById("attempts-box").classList.toggle("hidden", !(data.attempts || []).length);
+
+    const labels = { found: "Nota encontrada", refused: "Tokens recusados", error: "Erro" };
+    status(`${data.elapsed_seconds} s, ${data.attempts.length} tentativa(s)${data.messages.length ? ": " + data.messages.join("; ") : ""}`, false);
+    pill(data.status, labels[data.status] || data.status);
+
+    const inv = data.invoice;
+    document.getElementById("result").classList.toggle("hidden", !inv);
+    if (!inv) return;
+    fill("note", [["Número", text(inv.number)], ["Série", text(inv.series)], ["Emissão", when(inv.issued_at)], ["Competência", text(inv.competence)], ["Situação", inv.status_code === "100" ? "autorizada (100)" : text(inv.status_code)]]);
+    document.getElementById("total").textContent = money(inv.amounts.total ?? inv.amounts.service);
+    fill("amounts", [["Serviço", money(inv.amounts.service)], ["Desconto incondicional", money(inv.amounts.unconditional_discount)], ["Desconto condicional", money(inv.amounts.conditional_discount)]]);
+    fill("issuer", [["Razão social", text(inv.issuer.name)], ["CNPJ", text(inv.issuer.cnpj)], ["Município (IBGE)", text(inv.issuer.municipality_code)]]);
+    fill("trip", [["Placa", text(inv.trip.plate)], ["Categoria", text(inv.trip.vehicle_category)], ["Sentido", text(inv.trip.direction)], ["Praça", text(inv.trip.toll_plaza)], ["Km", text(inv.trip.toll_plaza_km)], ["Local", text(inv.trip.operation_place)]]);
+    const t = inv.amounts.taxes;
+    fill("taxes", [["ISSQN", `${money(t.issqn)} (${text(t.issqn_rate)}%)`], ["PIS", money(t.pis)], ["COFINS", money(t.cofins)], ["IBS", money(t.ibs)], ["CBS", money(t.cbs)]]);
+    fill("protocol", [["Número", text(inv.protocol.number)], ["Recebido em", when(inv.protocol.received_at)], ["Chave", text(inv.protocol.access_key)]]);
+  }
+
+  document.getElementById("form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = document.getElementById("submit");
+    const key = document.getElementById("key").value;
+    const token = document.getElementById("token").value;
+    button.disabled = true;
+    document.getElementById("result").classList.add("hidden");
+    document.getElementById("attempts-box").classList.add("hidden");
+    document.getElementById("raw-box").classList.add("hidden");
+    const started = Date.now();
+    const timer = setInterval(() => status(`Resolvendo o hCaptcha e consultando a Via... ${Math.round((Date.now() - started) / 1000)} s`, true), 500);
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["X-Access-Token"] = token;
+      const response = await fetch("/api/invoices", { method: "POST", headers, body: JSON.stringify({ access_key: key }) });
+      const data = await response.json();
+      clearInterval(timer);
+      if (response.status === 401) {
+        document.getElementById("token").classList.remove("hidden");
+        status("Este endereço exige o token de acesso. Preencha e consulte de novo.", false);
+      } else if (!response.ok) {
+        const detail = Array.isArray(data.detail) ? data.detail.map((d) => d.msg).join("; ") : data.detail;
+        status(detail || `Erro ${response.status}`, false);
+        pill("error", "Erro");
+      } else {
+        show(data);
+      }
+    } catch (error) {
+      clearInterval(timer);
+      status(`Sem resposta do servidor: ${error.message}`, false);
+      pill("error", "Erro");
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
