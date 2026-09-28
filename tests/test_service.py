@@ -5,6 +5,7 @@ from nfse_via_bot.service import fetch_invoice
 from tests.fakes import KEY, NOT_FOUND, REFUSAL, World, invoice_body
 
 SETTINGS = Settings(
+    _env_file=None,
     SOLVER_URL="http://solver",
     SOLVER_API_KEY="k",
     POLL_SECONDS=0,

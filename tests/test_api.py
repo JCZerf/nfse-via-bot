@@ -9,7 +9,9 @@ from tests.fakes import KEY
 
 @pytest.fixture
 def client(monkeypatch):
-    monkeypatch.setattr(main, "settings", Settings(SOLVER_URL="http://solver", SOLVER_API_KEY="k"))
+    monkeypatch.setattr(
+        main, "settings", Settings(_env_file=None, SOLVER_URL="http://solver", SOLVER_API_KEY="k")
+    )
 
     async def fake(access_key, settings):
         return Result(status="refused", access_key=access_key, elapsed_seconds=1.0, attempts=[])
@@ -18,8 +20,16 @@ def client(monkeypatch):
     return TestClient(main.app)
 
 
+@pytest.mark.parametrize("path", ["/", "/api/docs"])
+def test_the_root_goes_to_the_docs(client, path):
+    response = client.get(path, follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/docs"
+
+
 def test_the_page_is_served(client):
-    response = client.get("/")
+    response = client.get("/consulta")
 
     assert response.status_code == 200
     assert "Consulta NFS-e Via" in response.text
@@ -41,7 +51,9 @@ def test_a_malformed_key_is_refused(client, key):
 
 def test_the_access_token_is_required_when_set(client, monkeypatch):
     monkeypatch.setattr(
-        main, "settings", Settings(SOLVER_URL="http://solver", SOLVER_API_KEY="k", ACCESS_TOKEN="s")
+        main,
+        "settings",
+        Settings(_env_file=None, SOLVER_URL="http://solver", SOLVER_API_KEY="k", ACCESS_TOKEN="s"),
     )
 
     assert client.post("/api/invoices", json={"access_key": KEY}).status_code == 401
@@ -50,6 +62,8 @@ def test_the_access_token_is_required_when_set(client, monkeypatch):
 
 
 def test_an_unconfigured_solver_answers_503(client, monkeypatch):
-    monkeypatch.setattr(main, "settings", Settings(SOLVER_URL="", SOLVER_API_KEY=""))
+    monkeypatch.setattr(
+        main, "settings", Settings(_env_file=None, SOLVER_URL="", SOLVER_API_KEY="")
+    )
 
     assert client.post("/api/invoices", json={"access_key": KEY}).status_code == 503

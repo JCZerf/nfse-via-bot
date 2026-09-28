@@ -1,6 +1,6 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/index.py": { "maxDuration": 300, "includeFiles": "nfse_via_bot/**" }
+    "nfse_via_bot/main.py": { "maxDuration": 300 }
   }
 }

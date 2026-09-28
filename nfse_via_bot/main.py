@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field, field_validator
 
 from nfse_via_bot.config import settings
@@ -34,7 +34,13 @@ class Lookup(BaseModel):
         return key
 
 
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/", include_in_schema=False)
+@app.get("/api/docs", include_in_schema=False)
+async def home() -> RedirectResponse:
+    return RedirectResponse("/docs")
+
+
+@app.get("/consulta", response_class=HTMLResponse, include_in_schema=False)
 async def page() -> str:
     return PAGE.read_text()
 
