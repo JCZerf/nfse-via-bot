@@ -67,3 +67,27 @@ def test_an_unconfigured_solver_answers_503(client, monkeypatch):
     )
 
     assert client.post("/api/invoices", json={"access_key": KEY}).status_code == 503
+
+
+def test_the_docs_describe_every_field_and_the_examples_are_valid():
+    from nfse_via_bot.docs import LOOKUP_EXAMPLES, RESULT_EXAMPLES
+
+    schemas = main.app.openapi()["components"]["schemas"]
+    for name in (
+        "Result",
+        "Attempt",
+        "Invoice",
+        "Issuer",
+        "Trip",
+        "Amounts",
+        "Taxes",
+        "Protocol",
+        "Lookup",
+        "Health",
+    ):
+        for field, prop in schemas[name]["properties"].items():
+            assert prop.get("description"), f"{name}.{field}"
+    for example in LOOKUP_EXAMPLES.values():
+        main.Lookup.model_validate(example["value"])
+    for example in RESULT_EXAMPLES.values():
+        Result.model_validate(example["value"])

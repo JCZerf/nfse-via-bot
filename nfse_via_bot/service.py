@@ -14,18 +14,27 @@ MIN_ROOM_SECONDS = 60
 
 
 class Attempt(BaseModel):
-    seconds: float
-    outcome: Literal["accepted", "token_refused", "solver_error", "via_error"]
-    score: float | None = Field(default=None, description="Score de risco que a Via informou")
-    detail: str | None = None
+    seconds: float = Field(description="Duração da tentativa: resolver o token e consultar a Via")
+    outcome: Literal["accepted", "token_refused", "solver_error", "via_error"] = Field(
+        description="`accepted`: a Via aceitou o token; `token_refused`: recusou pelo score; "
+        "`solver_error`: o solver não entregou o token; `via_error`: a Via respondeu outro erro"
+    )
+    score: float | None = Field(
+        default=None,
+        description="Score de risco que a Via informou na recusa; a Via aceita até 0,7",
+    )
+    detail: str | None = Field(default=None, description="O erro do solver ou da Via, quando houve")
 
 
 class Result(BaseModel):
-    status: Literal["found", "refused", "error"]
-    access_key: str
-    elapsed_seconds: float
-    attempts: list[Attempt]
-    invoice: Invoice | None = None
+    status: Literal["found", "refused", "error"] = Field(
+        description="`found`: nota em `invoice`; `refused`: todos os tokens recusados pelo score; "
+        "`error`: outro erro da Via ou do solver"
+    )
+    access_key: str = Field(description="A chave consultada, já normalizada")
+    elapsed_seconds: float = Field(description="Tempo total da consulta")
+    attempts: list[Attempt] = Field(description="Cada token pedido ao solver, em ordem")
+    invoice: Invoice | None = Field(default=None, description="A nota, só com `status` `found`")
     messages: list[str] = Field(default_factory=list, description="Notificações da Via")
 
 

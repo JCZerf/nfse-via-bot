@@ -21,42 +21,44 @@ class Trip(BaseModel):
 
 
 class Taxes(BaseModel):
-    issqn_base: float | None = None
-    issqn_rate: float | None = None
-    issqn: float | None = None
-    pis: float | None = None
-    cofins: float | None = None
-    ibs: float | None = None
-    cbs: float | None = None
+    issqn_base: float | None = Field(default=None, description="Base de cálculo do ISSQN")
+    issqn_rate: float | None = Field(default=None, description="Alíquota do ISSQN, em %")
+    issqn: float | None = Field(default=None, description="Valor do ISSQN")
+    pis: float | None = Field(default=None, description="Valor do PIS")
+    cofins: float | None = Field(default=None, description="Valor da COFINS")
+    ibs: float | None = Field(default=None, description="Valor total do IBS")
+    cbs: float | None = Field(default=None, description="Valor da CBS")
 
 
 class Amounts(BaseModel):
     service: float | None = Field(default=None, description="Valor do serviço")
-    unconditional_discount: float | None = None
-    conditional_discount: float | None = None
+    unconditional_discount: float | None = Field(default=None, description="Desconto incondicional")
+    conditional_discount: float | None = Field(default=None, description="Desconto condicional")
     total: float | None = Field(default=None, description="Total da nota com IBS e CBS")
-    payment_mode: str | None = None
-    taxes: Taxes = Field(default_factory=Taxes)
+    payment_mode: str | None = Field(
+        default=None, description="Modo de pagamento, como a Via informa"
+    )
+    taxes: Taxes = Field(default_factory=Taxes, description="Tributos da nota")
 
 
 class Protocol(BaseModel):
-    number: str | None = None
-    received_at: str | None = None
-    access_key: str | None = None
+    number: str | None = Field(default=None, description="Número do protocolo de autorização")
+    received_at: str | None = Field(default=None, description="Data e hora do recebimento")
+    access_key: str | None = Field(default=None, description="Chave de acesso da nota")
 
 
 class Invoice(BaseModel):
     number: str | None = Field(default=None, description="Número da NFS-e Via")
-    series: str | None = None
+    series: str | None = Field(default=None, description="Série")
     issued_at: str | None = Field(default=None, description="Data e hora da emissão")
-    competence: str | None = None
+    competence: str | None = Field(default=None, description="Data de competência")
     status_code: str | None = Field(default=None, description="cStat; 100 é autorizada")
-    national_tax_code: str | None = None
-    nbs: str | None = None
-    issuer: Issuer = Field(default_factory=Issuer)
-    trip: Trip = Field(default_factory=Trip)
-    amounts: Amounts = Field(default_factory=Amounts)
-    protocol: Protocol = Field(default_factory=Protocol)
+    national_tax_code: str | None = Field(default=None, description="Código de tributação nacional")
+    nbs: str | None = Field(default=None, description="Código NBS do serviço")
+    issuer: Issuer = Field(default_factory=Issuer, description="A concessionária que emitiu")
+    trip: Trip = Field(default_factory=Trip, description="A passagem pelo pedágio")
+    amounts: Amounts = Field(default_factory=Amounts, description="Valores e tributos")
+    protocol: Protocol = Field(default_factory=Protocol, description="Protocolo de autorização")
 
 
 def _get(data: dict, *path: str):
